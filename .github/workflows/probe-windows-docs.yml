@@ -1,0 +1,39 @@
+name: probe windows docs
+on:
+  push:
+    branches: [probe/windows-docs]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  docs:
+    runs-on: windows-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [docs, docs-pdf]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          lfs: true
+          fetch-tags: true
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3
+      - name: Environment
+        run: |
+          just --version
+          Get-Command sh, bash, cygpath -ErrorAction SilentlyContinue | Format-Table Name, Source
+          just --evaluate ipython_config mpl_style
+      - name: Install
+        run: just install "--all-extras --no-extra gdsfactoryplus"
+      - name: Build
+        run: just --verbose ${{ matrix.target }}
+      - name: Inspect after
+        if: always()
+        shell: bash
+        run: |
+          ls -la ~/.ipython/profile_default ~/.config/matplotlib/stylelib ~/.matplotlib 2>&1 || true
+          ls -d C* 2>&1 || true
+          uv run --no-sync python -c "import matplotlib; print(matplotlib.get_configdir())" || true
+          ls docs/_build 2>&1 || true
