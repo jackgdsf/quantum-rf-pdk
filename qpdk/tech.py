@@ -4,7 +4,7 @@
 
 from collections.abc import Callable, Generator, Sequence
 from functools import cache, partial, wraps
-from typing import Any
+from typing import Any, Required, TypedDict
 
 import gdsfactory as gf
 from gdsfactory.cross_section import (
@@ -89,7 +89,17 @@ class LayerMapQPDK(LayerMap):
 
 L = LAYER = LayerMapQPDK
 
-material_properties: dict[str, dict[str, float | str]] = {
+
+class MaterialProperties(TypedDict, total=False):
+    """Physical properties and simulation metadata of a layer stack material."""
+
+    relative_permittivity: Required[float]
+    loss_tangent: float
+    conductivity: float
+    material_kind: str
+
+
+material_properties: dict[str, MaterialProperties] = {
     "vacuum": {
         "relative_permittivity": 1,
         "loss_tangent": 0.0,
@@ -241,7 +251,7 @@ LAYER_STACK = get_layer_stack()
 
 def get_layer_material_properties(
     layer_name: str, layer_stack: LayerStack | None = None
-) -> dict[str, float]:
+) -> MaterialProperties:
     """Returns the ``material_properties`` entry for a layer stack level's material.
 
     Simulation setups should read physical constants through this function so the

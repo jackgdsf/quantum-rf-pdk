@@ -243,6 +243,8 @@ project-excludes = [
   ".venv/**",
 ]
 project-includes = ["**/*.py"]
+# SCGSim is only installed with the optional ``palace-notebook`` group.
+ignore-missing-imports = ["scgsim", "scgsim.*"]
 
 [tool.pyrefly.errors]
 unused-ignore = "error"

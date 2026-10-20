@@ -350,7 +350,14 @@ layer_stack.layers["Substrate"].thickness = SUBSTRATE_DOMAIN_UM
 layer_stack.layers["Vacuum"].zmin = 0.0
 layer_stack.layers["Vacuum"].thickness = VACUUM_DOMAIN_UM
 
-material_spec = material_properties
+# Elmer takes numeric material properties only; drop string metadata such as
+# ``material_kind``.
+material_spec = {
+    name: {
+        key: value for key, value in props.items() if isinstance(value, (int, float))
+    }
+    for name, props in material_properties.items()
+}
 
 print("Layer stack (full PDK thickness in brackets):")
 for name, level in layer_stack.layers.items():
