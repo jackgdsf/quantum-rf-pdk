@@ -24,7 +24,7 @@ jobs:
         run: |
           just --version
           Get-Command sh, bash, cygpath -ErrorAction SilentlyContinue | Format-Table Name, Source
-          just --evaluate ipython_config mpl_style
+          just --evaluate ipython_config; just --evaluate mpl_style
       - name: Install
         run: just install "--all-extras --no-extra gdsfactoryplus"
       - name: Build
