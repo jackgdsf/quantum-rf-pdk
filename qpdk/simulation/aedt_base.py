@@ -12,23 +12,19 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from operator import itemgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import gdsfactory as gf
 from gdsfactory.technology.layer_stack import LayerLevel
 
 from qpdk import LAYER_STACK, logger
+from qpdk.simulation.layout import prepare_metal_layout
 from qpdk.singleton import SingletonMeta
-from qpdk.tech import LAYER, material_properties
-from qpdk.utils import (
-    add_margin_to_layer,
-    apply_additive_metals,
-    invert_mask_polarity,
-    remove_metadata_layers,
-)
+from qpdk.tech import material_properties
 
 if TYPE_CHECKING:
     from ansys.aedt.core import Hfss, Q2d
+    from ansys.aedt.core.modeler.modeler_3d import Modeler3D
     from ansys.aedt.core.q3d import Q3d
     from gdsfactory.component import Component
     from gdsfactory.technology import LayerStack
@@ -201,36 +197,24 @@ def prepare_component_for_aedt(
     component: Component,
     margin_draw: float = 0.0,
     margin_etch: float = 0.0,
+    *,
+    name: str | None = None,
 ) -> Component:
     """Prepare a component for AEDT simulation export.
+
+    Thin backward-compatible wrapper around
+    :func:`qpdk.simulation.layout.prepare_metal_layout`, keeping the historical
+    ``<component>_aedt`` name for the initial preparation cell.
 
     Returns:
         A copy of the component prepared for simulation.
     """
-    c = gf.Component(name=f"{component.name}_aedt")
-    c << component.copy()
-    if margin_etch > 0.0:
-        c = add_margin_to_layer(
-            c,
-            layer_margins=[
-                (LAYER.M1_ETCH, margin_etch),
-                (LAYER.M2_ETCH, margin_etch),
-            ],
-        )
-    c = apply_additive_metals(c)
-    c = invert_mask_polarity(c)
-    if margin_draw > 0.0:
-        c = add_margin_to_layer(
-            c,
-            layer_margins=[
-                (LAYER.M1_DRAW, margin_draw),
-                (LAYER.M2_DRAW, margin_draw),
-            ],
-        )
-    c = c.remove_layers(layer for layer in LAYER if str(layer).endswith("_ETCH"))  # type: ignore[attr-defined]
-    c = remove_metadata_layers(c)
-    c.add_ports(component.ports)
-    return c
+    return prepare_metal_layout(
+        component,
+        margin_draw=margin_draw,
+        margin_etch=margin_etch,
+        name=name or f"{component.name}_aedt",
+    )
 
 
 @contextmanager
@@ -415,6 +399,10 @@ class AEDTBase(metaclass=SingletonMeta):
         """The AEDT modeler instance."""
         return self.app.modeler
 
+    def _modeler_3d(self) -> Modeler3D:
+        """The modeler, typed as 3D for the solid-drawing calls (not valid for Q2D)."""
+        return cast("Modeler3D", self.modeler)
+
     def add_materials(self) -> None:
         """Add QPDK materials to the AEDT project."""
         add_materials_to_aedt(self.app)
@@ -435,7 +423,7 @@ class AEDTBase(metaclass=SingletonMeta):
         x_min, y_min = bounds.p1.x, bounds.p1.y
         dx, dy = bounds.p2.x - x_min, bounds.p2.y - y_min
 
-        substrate = self.modeler.create_box(
+        substrate = self._modeler_3d().create_box(
             origin=[x_min, y_min, -thickness],
             sizes=[dx, dy, thickness],
             name=name,

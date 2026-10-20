@@ -8,6 +8,9 @@ applyTo: "qpdk/models/**/*.py"
 junctions, qubit Hamiltonians, perturbation theory). Media definitions for coplanar waveguides live in
 `qpdk/models/cpw.py`.
 
+`qpdk/models/datasets/` stores and looks up FEM extraction results rather than defining SAX models, and is reviewed
+against `datasets.instructions.md`; its lookups must still trace under `jax.jit`.
+
 ## JAX and jittability
 
 - SAX models **must** stay JIT-compilable. Flag anything that breaks tracing:
@@ -62,5 +65,5 @@ uses them, not at module level.
 ## Tests that must accompany a model change
 
 - Unit tests in `tests/models/` covering behaviour, passivity, and reciprocity.
-- Model regression references are regenerated with `just test-models-force` into `tests/test_models_regression/` and
-  committed alongside the change. A numeric reference diff needs an explanation in the PR.
+- Model regression references are regenerated with `just test-models-force` into `tests/models/test_models_regression/`
+  and committed alongside the change. A numeric reference diff needs an explanation in the PR.

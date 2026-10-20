@@ -20,6 +20,7 @@ Detailed rules in `.github/instructions/` apply automatically to the areas below
 - `tech-layers.instructions.md` — `qpdk/tech.py`, `qpdk/layers.yaml`, `qpdk/klayout/**`
 - `models.instructions.md` — `qpdk/models/**`
 - `simulation.instructions.md` — `qpdk/simulation/**`
+- `datasets.instructions.md` — `qpdk/models/datasets/**`
 - `samples.instructions.md` — `qpdk/samples/**`
 - `tests.instructions.md` — `tests/**`
 - `notebooks.instructions.md` — `notebooks/**`
@@ -75,8 +76,14 @@ qpdk/                   Core Python package
 tests/                  pytest suite
   gds_ref/              GDS regression reference files
   test_pdk/             Settings and netlist regression YAML
-  test_models_regression/ Model regression reference data
-  models/               Model unit tests
+  models/               Model unit and regression tests
+    test_models_regression/ Model regression reference data
+  helper/               Helper function tests
+  comsol/               COMSOL integration tests
+  matlab/               MATLAB integration tests
+  hfss/                 HFSS integration tests
+  gfp/                  GDSFactory+ integration tests
+  precommit/            Tests for repo pre-commit scripts
 docs/                   Sphinx documentation source
 notebooks/src/          Jupytext notebook sources (.py percent format, .m for MATLAB)
 pyproject.toml          Metadata, dependencies, ruff/pyrefly/pytest/interrogate config
@@ -98,11 +105,17 @@ Comment on these in roughly this order, and stay quiet about the rest:
 1. **Missing tests** for new public behaviour.
 1. **Missing or wrong docstrings** on new public API — `interrogate` fails CI at anything under 100% coverage.
 1. **Security**, per the rules in the path-specific files.
+1. **Modernization**, per `python.instructions.md`: idioms the supported Python range already allows, and a
+   `# TODO(Python 3.X): <feature> - <what to change>` marker on workarounds a newer Python would delete.
 
 ## Cross-cutting rules
 
 - **Logging:** use `from qpdk import logger` (loguru), never `print()`, in library code.
 - **Math in docstrings:** use the RST `:math:` role, never `$...$`.
+- **Upright vs italic in math (ISO 80000-2):** italic is for variables only. Units and descriptive
+  subscripts/superscripts are upright with `\text{}` — `\,\text{GHz}`, `E_\text{J}`, `C_\text{q}`, `Q_\text{ext}`.
+  Numeric and mathematical indices stay italic — `S_{21}`, `T_1`, `f_{01}`, `\sum_k a_k`. Flag `\mathrm{}`/`\textrm{}`
+  in new math (use `\text{}`), and an italic unit or descriptive script. `\mathtt{}` for Python identifiers is fine.
 - **Physical constants:** import from `qpdk/models/constants.py`; never redefine locally.
 - **Layers:** use the `LAYER` map from `qpdk/tech.py`; raw layer tuples are rejected by pre-commit.
 - **Git LFS:** CSV data under `tests/models/data/` is LFS-tracked; GDS/OAS are binary per `.gitattributes`. Check new
